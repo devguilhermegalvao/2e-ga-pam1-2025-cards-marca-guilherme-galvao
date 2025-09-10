@@ -1,30 +1,71 @@
-import React, { useRef } from "react";
+import React, { useRef, useMemo } from "react";
 import { View, Text, Image, Animated, Pressable, StyleSheet } from "react-native";
-import type { Produto } from "../tipos";
-import { tema } from "../tema/tema";
+import type { Produto } from "../tipos/tipos";
+import { useTema } from "../tema/TemaContexto";
 import AvaliacaoEstrelas from "./AvaliacaoEstrelas";
-import { formatarMoeda } from "<div styleName={} />
-<div styleName={}></div>/utils/formatarMoeda";
+import { formatarMoeda } from "../../utils/formatarMoeda";
 
-export default function CardProduto({ produto, onPress }: { produto: Produto; onPress: () => void }) {
+interface CardProdutoProps {
+  produto: Produto;
+  onPress: () => void;
+}
+
+export default function CardProduto({ produto, onPress }: CardProdutoProps) {
+  const { cores, raio, sombraSuave } = useTema();
   const scale = useRef(new Animated.Value(1)).current;
-  const pressIn = () => Animated.spring(scale, { toValue: 0.98, useNativeDriver: true }).start();
-  const pressOut = () => Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start();
+
+  const pressIn = () => {
+    Animated.spring(scale, {
+      toValue: 0.98,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const pressOut = () => {
+    Animated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const estoqueBaixo = useMemo(() => produto.estoque && produto.estoque <= 3, [produto.estoque]);
 
   return (
-    <Animated.View style={{ transform: [{ scale }], marginBottom: 14 }}>
-      <Pressable onPress={onPress} onPressIn={pressIn} onPressOut={pressOut} style={({ pressed }) => [estilos.card, pressed && { opacity: 0.95 }]}>
-        <Image source={{ uri: produto.imagens[0] }} style={estilos.imagem} />
+    <Animated.View style={{ transform: [{ scale }] }}>
+      <Pressable
+        onPress={onPress}
+        onPressIn={pressIn}
+        onPressOut={pressOut}
+        style={[estilos.card, { backgroundColor: cores.card, borderRadius: raio.lg, ...sombraSuave, marginBottom: 14 }]}
+        accessibilityRole="button"
+        accessibilityLabel={`Ver detalhes do produto ${produto.nome}`}
+      >
+        <Image
+          source={{ uri: produto.imagens[0] }}
+          style={estilos.imagem}
+          accessibilityRole="image"
+          accessibilityLabel={`Imagem de ${produto.nome}`}
+        />
         <View style={estilos.corpo}>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-            <Text style={estilos.titulo}>{produto.nome}</Text>
-            {produto.edicaoLimitada && <View style={estilos.tagLimitada}><Text style={{ color: tema.cores.primaria, fontWeight: "800" }}>LIMITED</Text></View>}
+          <View style={estilos.cabecalhoCorpo}>
+            <Text style={[estilos.titulo, { color: cores.texto }]}>{produto.nome}</Text>
+            {produto.edicaoLimitada && (
+              <View style={[estilos.tagLimitada, { backgroundColor: cores.superficie, borderRadius: raio.md, marginLeft: 8 }]}>
+                <Text style={[estilos.tagTexto, { color: cores.primaria }]}>LIMITED</Text>
+              </View>
+            )}
           </View>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
-            <Text style={estilos.preco}>{formatarMoeda(produto.preco)}</Text>
+          <View style={estilos.detalhesPreco}>
+            <Text style={[estilos.preco, { color: cores.primaria }]}>
+              {formatarMoeda(produto.preco, 'BRL', 'pt-BR')} 
+            </Text>
             <AvaliacaoEstrelas avaliacao={produto.avaliacao ?? 0} />
           </View>
-          {!!produto.estoque && produto.estoque <= 3 && <Text style={estilos.estoqueAviso}>Últimas {produto.estoque} unidades</Text>}
+          {estoqueBaixo && (
+            <Text style={[estilos.estoqueAviso, { color: cores.perigo }]}>
+              Últimas {produto.estoque} unidades
+            </Text>
+          )}
         </View>
       </Pressable>
     </Animated.View>
@@ -33,15 +74,43 @@ export default function CardProduto({ produto, onPress }: { produto: Produto; on
 
 const estilos = StyleSheet.create({
   card: {
-    backgroundColor: tema.cores.card,
-    borderRadius: tema.raio.lg,
     overflow: "hidden",
-    ...tema.sombraSuave,
   },
-  imagem: { width: "100%", height: 160 },
-  corpo: { padding: 12 },
-  titulo: { color: tema.cores.texto, fontSize: 16, fontWeight: "800" },
-  preco: { color: tema.cores.primaria, fontWeight: "800" },
-  tagLimitada: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, backgroundColor: tema.cores.superficie },
-  estoqueAviso: { marginTop: 8, color: tema.cores.perigo, fontWeight: "700" },
+  imagem: {
+    width: "100%",
+    height: 160,
+  },
+  corpo: {
+    padding: 12,
+  },
+  cabecalhoCorpo: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  titulo: {
+    fontSize: 16,
+    fontWeight: "800",
+    flexShrink: 1,
+  },
+  preco: {
+    fontWeight: "800",
+  },
+  detalhesPreco: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 8,
+  },
+  tagLimitada: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  tagTexto: {
+    fontWeight: "800",
+  },
+  estoqueAviso: {
+    marginTop: 8,
+    fontWeight: "700",
+  },
 });

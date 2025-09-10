@@ -1,4 +1,5 @@
 export type Produto = {
+  specs(specs: any): unknown;
   id: number;
   nome: string;
   preco: number;
